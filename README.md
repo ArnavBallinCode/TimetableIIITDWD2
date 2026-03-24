@@ -1,4 +1,4 @@
-# Automated Time Table Scheduling for IIIT Dharwad
+# Automated Time Table Scheduling for IIIT Dharwad (Bumblebee)
 
 A Python-based automated timetable generation system for universities that handles multiple departments, elective courses, faculty constraints, and room allocations with intelligent scheduling algorithms.
 
