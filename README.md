@@ -264,6 +264,7 @@ Run tests to verify system functionality before deploying.
 
 For detailed project information, refer to:
 - **Detailed Project Report**: `docs/BumbleBee_DPR.pdf`
+- **Detailed Logic Walkthrough**: `docs/Timetable_Generation_Logic_Explained.md`
 - **Test Cases**: `tests/test_cases.md`
 
 ## Key Features Explained
