@@ -3,7 +3,7 @@
 This document explains, in plain language, how the timetable generator works internally.
 It is intentionally detailed and example-driven.
 
-> Source of truth: `/home/runner/work/TimetableIIITDWD2/TimetableIIITDWD2/timetable_automation/main.py`
+> Source of truth: `timetable_automation/main.py`
 
 ---
 
@@ -325,4 +325,3 @@ If explaining to a beginner:
 8. Export pretty Excel files with legends.
 
 That is the full pipeline.
-
