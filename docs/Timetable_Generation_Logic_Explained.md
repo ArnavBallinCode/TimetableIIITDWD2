@@ -89,14 +89,14 @@ Each CSV row becomes a `Course` object.
 - Elective is considered true if:
   - `Elective > 0`, **or**
   - `basket > 0`
-- `L-T-P-S-C` is split into integers `L`, `T`, `P`, `S`, `C`.
-- Invalid numeric fields are safely defaulted (mostly to `0`).
+- `L-T-P-S-C` is parsed and split into integers `L`, `T`, `P`, `S`, `C`.
+- The implementation assumes these numeric fields (`Elective`, `basket`, `L-T-P-S-C`, etc.) are valid integers in the input CSVs; malformed values may cause parsing errors or leave some components unset, so input data must satisfy these constraints.
 
 ### Example
 
 If row is:
 
-`CS510,Advanced Topic,Prof X,3-1-0-0-4,1,1,basket=2`
+`CS510,Advanced Topic,Prof X,3-1-0-0-4,1,1,2`
 
 Then:
 - `L=3`, `T=1`, `P=0`
