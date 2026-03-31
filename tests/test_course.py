@@ -21,3 +21,15 @@ class TestCourse(unittest.TestCase):
         row = {"Course_Code": "CS102", "L-T-P-S-C": "bad-data"}
         course = Course(row)
         self.assertEqual((course.L, course.T, course.P), (0, 0, 0))
+
+    def test_elective_without_valid_basket_raises_error(self):
+        row = {
+            "Course_Code": "CS999",
+            "L-T-P-S-C": "3-0-0-0-3",
+            "Elective": "1",
+            "basket": "0",
+        }
+        with self.assertRaises(ValueError) as context:
+            Course(row)
+        self.assertIn("elective", str(context.exception).lower())
+        self.assertIn("basket", str(context.exception).lower())
