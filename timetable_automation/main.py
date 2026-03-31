@@ -1119,7 +1119,7 @@ class Scheduler:
             day_abbr = {"Monday": "Mon", "Tuesday": "Tue", "Wednesday": "Wed", "Thursday": "Thu", "Friday": "Fri"}
 
             def sort_key(item):
-                _, days = item
+                days = item[1]
                 indices = [self.days.index(d) for d in days if d in self.days]
                 return min(indices) if indices else 99
 
