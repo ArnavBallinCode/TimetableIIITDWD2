@@ -253,28 +253,27 @@ class TC05_MissingBasketColumn(unittest.TestCase):
     """
     Scenario : courses CSV has no 'basket' column at all.
     Input    : dataset3_invalid/courses_missing_basket.csv
-    Expected : Scheduler loads without crash; basket defaults to 0.
+    Expected : Invalid elective rows (Elective=1 with no basket) are rejected with clear error.
     """
 
-    def test_missing_basket_no_crash(self):
-        sched = make_scheduler(
-            str(D3 / "courses_missing_basket.csv"),
-            rooms_file=str(D3 / "rooms.csv"),
-            slots_file=str(D3 / "timeslots.csv"),
-        )
-        try:
-            run_timetable(sched, "TC05")
-        except Exception as e:
-            self.fail(f"Scheduler crashed when basket column is missing: {e}")
+    def test_missing_basket_with_elective_raises(self):
+        with self.assertRaises(ValueError) as context:
+            make_scheduler(
+                str(D3 / "courses_missing_basket.csv"),
+                rooms_file=str(D3 / "rooms.csv"),
+                slots_file=str(D3 / "timeslots.csv"),
+            )
+        self.assertIn("elective", str(context.exception).lower())
+        self.assertIn("basket", str(context.exception).lower())
 
-    def test_missing_basket_defaults_to_zero(self):
+    def test_missing_basket_defaults_to_zero_for_non_elective(self):
         row = {
             "Course_Code": "CS154",
             "Course_Title": "Intro to Data Analytics",
             "L-T-P-S-C": "3-1-0-0-2",
             "Faculty": "Dr. Abdul Wahid",
-            "Semester_Half": "1",
-            "Elective": "1",
+            "Semester_Half": "1", 
+            "Elective": "0",
             "Students": "11",
             "is_combined": "0",
             # 'basket' intentionally omitted

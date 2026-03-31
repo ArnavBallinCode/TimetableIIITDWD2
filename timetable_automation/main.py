@@ -21,6 +21,10 @@ class Course:
             elective_num = float(elective_str) if elective_str else 0.0
         except Exception:
             elective_num = 1.0 if elective_str in {"true", "yes", "y"} else 0.0
+        if elective_num > 0 and self.basket == 0:
+            raise ValueError(
+                f"Invalid course data for {self.code}: elective courses must have a non-zero basket."
+            )
         self.is_elective = (elective_num > 0) or (self.basket > 0)
         raw_combined = row.get("is_combined", row.get("Is_Combined", 0))
         self.is_combined = str(raw_combined).strip().lower() in {"1", "true", "yes", "y"}

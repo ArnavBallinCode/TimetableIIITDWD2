@@ -26,9 +26,9 @@ class TestElectiveAllotment(unittest.TestCase):
 
         # Mock courses CSV
         courses_csv = StringIO(
-            "Course_Code,Course_Title,L-T-P-S-C,Faculty,Semester_Half,Elective\n"
-            "CS101,Intro,3-0-0-0-3,Alice,1,1\n"
-            "CS102,DS,3-0-0-0-3,Bob,1,0\n"
+            "Course_Code,Course_Title,L-T-P-S-C,Faculty,Semester_Half,Elective,basket\n"
+            "CS101,Intro,3-0-0-0-3,Alice,1,1,1\n"
+            "CS102,DS,3-0-0-0-3,Bob,1,0,0\n"
         )
         self.courses_file = "tests/test_data/mock_courses.csv"
         pd.read_csv(courses_csv).to_csv(self.courses_file, index=False)
