@@ -642,13 +642,6 @@ class Scheduler:
             sheet_name,
             {day: {slot: [] for slot in self.slots} for day in self.days},
         )
-        for day in self.days:
-            day_busy = lecturer_busy.setdefault(day, {})
-            if not isinstance(day_busy, dict):
-                day_busy = {}
-                lecturer_busy[day] = day_busy
-            for slot in self.slots:
-                day_busy.setdefault(slot, [])
         labs_scheduled = {day: False for day in self.days}
         self.course_room_map = {}
 

@@ -103,12 +103,18 @@ class TestFacultyConflicts(unittest.TestCase):
         entries_b = [e for e in scheduler_b.scheduled_entries if e["sheet"] == "First_Half"]
 
         self.assertEqual(len(entries_a), 1)
+        self.assertEqual(entries_a[0]["faculty"], "Dr. Shared")
         self.assertEqual(len(entries_b), 0)
-        self.assertTrue(
-            any(
-                u["course_code"] == "EC101" and u["type"] == "Lecture"
-                for u in scheduler_b.unscheduled_courses
-            )
+        unscheduled_ec101 = [
+            unscheduled_course
+            for unscheduled_course in scheduler_b.unscheduled_courses
+            if unscheduled_course["course_code"] == "EC101" and unscheduled_course["type"] == "Lecture"
+        ]
+        self.assertEqual(len(unscheduled_ec101), 1)
+        self.assertEqual(unscheduled_ec101[0]["faculty"], "Dr. Shared")
+        self.assertEqual(
+            shared_lecturer_busy.get("First_Half", {}).get("Monday", {}).get("09:00-10:00"),
+            ["Dr. Shared"],
         )
 
 
