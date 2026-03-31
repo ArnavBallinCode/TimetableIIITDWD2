@@ -232,9 +232,7 @@ class Scheduler:
 
     def _required_capacity_for_course(self, course, is_elective, is_combined):
         own_strength = max(0, int(getattr(course, "students", 0) or 0))
-        if is_elective:
-            return own_strength if own_strength > 0 else None
-        if not is_combined:
+        if is_elective or not is_combined:
             return own_strength if own_strength > 0 else None
         combined_strength = max(
             0,
