@@ -526,7 +526,7 @@ class TC12_SlotDuration(unittest.TestCase):
             )
 
     def test_unsorted_timeslots_are_sorted_chronologically(self):
-        with tempfile.TemporaryDirectory(dir="/tmp") as tmp_dir:
+        with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_slots = Path(tmp_dir) / "tmp_unsorted_slots.csv"
             pd.DataFrame([
                 {"Slot_ID": 1, "Start_Time": "10:00", "End_Time": "10:30"},
@@ -536,7 +536,7 @@ class TC12_SlotDuration(unittest.TestCase):
             self.assertEqual(sched.slots[:2], ["09:00-10:00", "10:00-10:30"])
 
     def test_invalid_timeslot_duration_raises_value_error(self):
-        with tempfile.TemporaryDirectory(dir="/tmp") as tmp_dir:
+        with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_slots = Path(tmp_dir) / "tmp_invalid_duration_slots.csv"
             pd.DataFrame([
                 {"Slot_ID": 1, "Start_Time": "11:00", "End_Time": "10:00"},

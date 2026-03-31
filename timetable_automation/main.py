@@ -68,11 +68,11 @@ class Scheduler:
         slots_df = slots_df.sort_values(by=["_start_minutes", "_end_minutes"], kind="stable")
         prev_end = None
         for _, row in slots_df.iterrows():
-            start_minutes = int(row["_start_minutes"])
-            end_minutes = int(row["_end_minutes"])
+            start_minutes = row["_start_minutes"]
+            end_minutes = row["_end_minutes"]
             if prev_end is not None and start_minutes < prev_end:
                 raise ValueError(
-                    f"Timeslots out of order: {row['Start_Time']}-{row['End_Time']}"
+                    f"Overlapping timeslots detected: {row['Start_Time']}-{row['End_Time']}"
                 )
             prev_end = end_minutes
         self.slots = [f"{row['Start_Time']}-{row['End_Time']}" for _, row in slots_df.iterrows()]
@@ -397,7 +397,7 @@ class Scheduler:
     def _time_to_minutes(self, time_str):
         try:
             h, m = map(int, str(time_str).strip().split(":"))
-        except Exception as exc:
+        except (ValueError, TypeError, AttributeError) as exc:
             raise ValueError(f"Invalid timeslot time format: {time_str}") from exc
         if not (0 <= h <= 23 and 0 <= m <= 59):
             raise ValueError(f"Invalid timeslot time value: {time_str}")
