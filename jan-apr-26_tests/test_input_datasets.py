@@ -24,6 +24,7 @@ TC12  Slot duration calculation correctness (unit test)
 """
 
 import os
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -523,6 +524,25 @@ class TC12_SlotDuration(unittest.TestCase):
                 self.sched._slot_duration(slot), 0,
                 f"Slot {slot} has non-positive duration"
             )
+
+    def test_unsorted_timeslots_are_sorted_chronologically(self):
+        with tempfile.TemporaryDirectory(dir="/tmp") as tmp_dir:
+            tmp_slots = Path(tmp_dir) / "tmp_unsorted_slots.csv"
+            pd.DataFrame([
+                {"Slot_ID": 1, "Start_Time": "10:00", "End_Time": "10:30"},
+                {"Slot_ID": 2, "Start_Time": "09:00", "End_Time": "10:00"},
+            ]).to_csv(tmp_slots, index=False)
+            sched = make_scheduler(str(D1 / "coursesCSEA-II.csv"), slots_file=str(tmp_slots), dept_name="CSE-2-A")
+            self.assertEqual(sched.slots[:2], ["09:00-10:00", "10:00-10:30"])
+
+    def test_invalid_timeslot_duration_raises_value_error(self):
+        with tempfile.TemporaryDirectory(dir="/tmp") as tmp_dir:
+            tmp_slots = Path(tmp_dir) / "tmp_invalid_duration_slots.csv"
+            pd.DataFrame([
+                {"Slot_ID": 1, "Start_Time": "11:00", "End_Time": "10:00"},
+            ]).to_csv(tmp_slots, index=False)
+            with self.assertRaisesRegex(ValueError, "Invalid timeslot duration"):
+                make_scheduler(str(D1 / "coursesCSEA-II.csv"), slots_file=str(tmp_slots), dept_name="CSE-2-A")
 
 
 if __name__ == "__main__":
