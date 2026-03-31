@@ -12,7 +12,7 @@ Tests are organized across 4 curated datasets:
 TC01  Baseline timetable generation (Dataset 1)
 TC02  No duplicate room usage in same slot (Dataset 1)
 TC03  Stress: unscheduled courses when rooms are scarce (Dataset 2)
-TC04  Invalid L-T-P-S-C defaults to (0,0,0) without crash (Dataset 3)
+TC04  Invalid L-T-P-S-C is rejected with clear error (Dataset 3)
 TC05  Missing basket column handled gracefully (Dataset 3)
 TC06  Negative / non-numeric students clamped to 0 (Dataset 3)
 TC07  Empty course file produces no scheduled entries (Dataset 3)
@@ -177,16 +177,16 @@ class TC03_StressRoomScarcity(unittest.TestCase):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TC04 — Invalid L-T-P-S-C defaults to (0,0,0) without crash (Dataset 3)
+# TC04 — Invalid L-T-P-S-C is rejected with clear error (Dataset 3)
 # ══════════════════════════════════════════════════════════════════════════════
 class TC04_InvalidLTPFormat(unittest.TestCase):
     """
     Scenario : One course has L-T-P-S-C = "BAD-FORMAT".
     Input    : dataset3_invalid/courses_invalid_ltp.csv
-    Expected : Course object created with L=T=P=0; no exception raised.
+    Expected : ValueError is raised with a clear validation message.
     """
 
-    def test_bad_ltp_defaults_to_zero(self):
+    def test_bad_ltp_raises_clear_value_error(self):
         row = {
             "Course_Code": "MA163",
             "Course_Title": "Linear Algebra",
@@ -198,52 +198,17 @@ class TC04_InvalidLTPFormat(unittest.TestCase):
             "basket": "0",
             "is_combined": "0",
         }
-        course = Course(row)
-        self.assertEqual((course.L, course.T, course.P), (0, 0, 0))
+        with self.assertRaisesRegex(ValueError, "Invalid L-T-P-S-C format: expected 5 integers"):
+            Course(row)
 
-    def test_scheduler_exposes_missing_S_attribute_bug(self):
-        """
-        This test documents a known bug (Bug #4 / robustness gap):
-        When L-T-P-S-C is malformed, Course.__init__ sets L=T=P=0 but does NOT
-        set S or C. The scheduler later accesses c.S in generate_timetable(),
-        causing an AttributeError crash.
-
-        Expected (current buggy behaviour): AttributeError is raised.
-        This test CONFIRMS the bug exists — it is intentionally asserting the crash.
-        """
-        sched = make_scheduler(
-            str(D3 / "courses_invalid_ltp.csv"),
-            rooms_file=str(D3 / "rooms.csv"),
-            slots_file=str(D3 / "timeslots.csv"),
-        )
-        with self.assertRaises((AttributeError, Exception),
-                               msg="Bug confirmed: Course with bad L-T-P-S-C missing .S attribute crashes scheduler"):
-            run_timetable(sched, "TC04_bug")
-
-    def test_course_object_missing_S_C_on_bad_ltp(self):
-        """
-        Directly verify that a Course with bad L-T-P-S-C is missing .S and .C
-        attributes — confirming the incomplete error handling in Course.__init__.
-        """
-        row = {
-            "Course_Code": "MA163",
-            "Course_Title": "Linear Algebra",
-            "L-T-P-S-C": "BAD-FORMAT",
-            "Faculty": "Dr. Anand P. Barangi",
-            "Semester_Half": "1",
-            "Elective": "0",
-            "Students": "107",
-            "basket": "0",
-            "is_combined": "0",
-        }
-        course = Course(row)
-        # L, T, P are set to 0 by the except block
-        self.assertEqual((course.L, course.T, course.P), (0, 0, 0))
-        # S and C are NOT set — this is the bug
-        self.assertFalse(
-            hasattr(course, "S"),
-            "Bug confirmed: Course.S is not set when L-T-P-S-C parsing fails"
-        )
+    def test_scheduler_rejects_bad_ltpsc_during_load(self):
+        """Scheduler construction fails fast with malformed L-T-P-S-C input."""
+        with self.assertRaisesRegex(ValueError, "Invalid L-T-P-S-C format: expected 5 integers"):
+            make_scheduler(
+                courses_file=str(D3 / "courses_invalid_ltp.csv"),
+                rooms_file=str(D3 / "rooms.csv"),
+                slots_file=str(D3 / "timeslots.csv"),
+            )
 
 
 # ══════════════════════════════════════════════════════════════════════════════

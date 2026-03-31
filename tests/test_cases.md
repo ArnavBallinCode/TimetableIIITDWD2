@@ -7,7 +7,7 @@
 | Test Case Input | Function | Description | Expected Output |
 |-----------------|-----------|--------------|-----------------|
 | Valid row with all fields | `Course(row)` | Parses course details correctly | `code="CS101"`, `title="Intro to Programming"`, `(L,T,P)=(3,1,0)`, `is_elective=False` |
-| Invalid L-T-P-S-C format | `Course(row)` | Handles malformed L-T-P-S-C string gracefully | `(L,T,P)=(0,0,0)` |
+| Invalid L-T-P-S-C format | `Course(row)` | Rejects malformed L-T-P-S-C string | Raises `ValueError` with clear format message |
 | Missing optional fields | `Course(row)` | Uses defaults when Faculty or Semester_Half is missing | No crash; default empty/zero values |
 | Trailing spaces | `Course(row)` | Trims leading/trailing whitespace | Cleaned string values |
 | Elective as string `"1"` | `Course(row)` | Converts "1"/"0" to boolean correctly | `is_elective=True` |

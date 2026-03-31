@@ -29,10 +29,17 @@ class Course:
             self.students = max(0, int(float(str(students_raw).strip())))
         except Exception:
             self.students = 0
+        ltp_parts = [part.strip() for part in self.ltp.split("-")]
+        if len(ltp_parts) != 5:
+            raise ValueError(
+                f"Invalid L-T-P-S-C format: expected 5 integers, got '{self.ltp}'"
+            )
         try:
-            self.L, self.T, self.P, self.S, self.C = map(int, self.ltp.split("-"))
-        except Exception:
-            self.L, self.T, self.P = 0, 0, 0
+            self.L, self.T, self.P, self.S, self.C = map(int, ltp_parts)
+        except ValueError as exc:
+            raise ValueError(
+                f"Invalid L-T-P-S-C format: expected 5 integers, got '{self.ltp}'"
+            ) from exc
 
 
 class Scheduler:
