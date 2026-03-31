@@ -231,9 +231,9 @@ class Scheduler:
         return (self.semester_group, self.combined_cluster_id, str(code).strip().upper())
 
     def _required_capacity_for_course(self, course, is_elective, is_combined):
-        if is_elective or not is_combined:
-            return None
         own_strength = max(0, int(getattr(course, "students", 0) or 0))
+        if is_elective or not is_combined:
+            return own_strength if own_strength > 0 else None
         combined_strength = max(
             0,
             int(self.global_combined_strength.get(self._combined_strength_key(course.code), 0) or 0),
