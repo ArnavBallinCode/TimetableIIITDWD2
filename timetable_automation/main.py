@@ -268,15 +268,18 @@ class Scheduler:
 
     def _is_room_available(self, day, slots, room_id, combined_key=None, sheet_name=None):
         room_usage = self._sheet_scoped_usage(self.global_room_usage, sheet_name)
+        elective_room_usage = self._sheet_scoped_usage(self.global_elective_room_usage, sheet_name)
         combined_room_usage = self._sheet_scoped_usage(self.global_combined_room_usage, sheet_name)
         for slot in slots:
             used_rooms = room_usage.get(day, {}).get(slot, [])
-            if room_id not in used_rooms:
-                continue
-            if not combined_key:
-                return False
-            owner = combined_room_usage.get(day, {}).get(slot, {}).get(room_id)
-            if owner != combined_key:
+            room_used_by_elective = room_id in elective_room_usage.get(day, {}).get(slot, {})
+            if room_id in used_rooms:
+                if not combined_key:
+                    return False
+                owner = combined_room_usage.get(day, {}).get(slot, {}).get(room_id)
+                if owner != combined_key:
+                    return False
+            if room_used_by_elective:
                 return False
         return True
 
@@ -1193,7 +1196,6 @@ class Scheduler:
                             slot,
                             preferred_room,
                             template_owner_key,
-                            check_non_elective_usage=False,
                         ):
                             preferred_free = False
                             break
