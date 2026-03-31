@@ -54,7 +54,28 @@ class Scheduler:
         global_c004_reserved_slots=None,
     ):
         df = pd.read_csv(slots_file)
-        self.slots = [f"{row['Start_Time'].strip()}-{row['End_Time'].strip()}" for _, row in df.iterrows()]
+        slots_df = df.copy()
+        slots_df["Start_Time"] = slots_df["Start_Time"].astype(str).str.strip()
+        slots_df["End_Time"] = slots_df["End_Time"].astype(str).str.strip()
+        slots_df["_start_minutes"] = slots_df["Start_Time"].apply(self._time_to_minutes)
+        slots_df["_end_minutes"] = slots_df["End_Time"].apply(self._time_to_minutes)
+        invalid_duration = slots_df[slots_df["_end_minutes"] <= slots_df["_start_minutes"]]
+        if not invalid_duration.empty:
+            bad = invalid_duration.iloc[0]
+            raise ValueError(
+                f"Invalid timeslot duration: {bad['Start_Time']}-{bad['End_Time']}"
+            )
+        slots_df = slots_df.sort_values(by=["_start_minutes", "_end_minutes"], kind="stable")
+        prev_end = None
+        for _, row in slots_df.iterrows():
+            start_minutes = row["_start_minutes"]
+            end_minutes = row["_end_minutes"]
+            if prev_end is not None and start_minutes < prev_end:
+                raise ValueError(
+                    f"Overlapping timeslots detected: {row['Start_Time']}-{row['End_Time']}"
+                )
+            prev_end = end_minutes
+        self.slots = [f"{row['Start_Time']}-{row['End_Time']}" for _, row in slots_df.iterrows()]
         self.slot_durations = {s: self._slot_duration(s) for s in self.slots}
 
         courses_df = pd.read_csv(courses_file)
@@ -373,11 +394,23 @@ class Scheduler:
 
 
  
+    def _time_to_minutes(self, time_str):
+        try:
+            h, m = map(int, str(time_str).strip().split(":"))
+        except (ValueError, TypeError, AttributeError) as exc:
+            raise ValueError(f"Invalid timeslot time format: {time_str}") from exc
+        if not (0 <= h <= 23 and 0 <= m <= 59):
+            raise ValueError(f"Invalid timeslot time value: {time_str}")
+        return h * 60 + m
+
     def _slot_duration(self, slot):
-        start, end = slot.split("-")
-        h1, m1 = map(int, start.split(":"))
-        h2, m2 = map(int, end.split(":"))
-        return (h2 + m2 / 60) - (h1 + m1 / 60)
+        start, end = slot.split("-", 1)
+        start_minutes = self._time_to_minutes(start)
+        end_minutes = self._time_to_minutes(end)
+        duration_minutes = end_minutes - start_minutes
+        if duration_minutes <= 0:
+            raise ValueError(f"Invalid timeslot duration: {slot}")
+        return duration_minutes / 60
 
     def _get_free_blocks(self, timetable, day):
         free_blocks, block = [], []

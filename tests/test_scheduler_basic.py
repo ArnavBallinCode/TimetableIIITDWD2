@@ -1,4 +1,5 @@
 import unittest
+import tempfile
 import pandas as pd
 from timetable_automation.main import Scheduler
 
@@ -29,3 +30,22 @@ class TestSchedulerBasics(unittest.TestCase):
         df.at["Monday", "09:00-10:00"] = "Used"
         free = self.sched._get_free_blocks(df, "Monday")
         self.assertIsInstance(free, list)
+
+    def test_slots_are_sorted_by_start_time(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            slots_path = f"{tmp_dir}/slots_unsorted.csv"
+            pd.DataFrame([
+                {"Start_Time": "10:00", "End_Time": "11:00"},
+                {"Start_Time": "09:00", "End_Time": "10:00"}
+            ]).to_csv(slots_path, index=False)
+            sched = Scheduler(slots_path, "tests/test_data/temp_courses.csv", "tests/test_data/temp_rooms.csv", {})
+            self.assertEqual(sched.slots, ["09:00-10:00", "10:00-11:00"])
+
+    def test_invalid_slot_duration_raises_error(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            slots_path = f"{tmp_dir}/slots_invalid_duration.csv"
+            pd.DataFrame([
+                {"Start_Time": "10:00", "End_Time": "09:00"}
+            ]).to_csv(slots_path, index=False)
+            with self.assertRaisesRegex(ValueError, "Invalid timeslot duration"):
+                Scheduler(slots_path, "tests/test_data/temp_courses.csv", "tests/test_data/temp_rooms.csv", {})
