@@ -26,6 +26,7 @@ class TestElectiveRoomAlignment(unittest.TestCase):
             [
                 {"Room_ID": "C101", "Capacity": 96, "Type": "Classroom"},
                 {"Room_ID": "C102", "Capacity": 96, "Type": "Classroom"},
+                {"Room_ID": "L101", "Capacity": 60, "Type": "Lab"},
             ]
         ).to_csv(self.rooms_file, index=False)
 
@@ -142,6 +143,80 @@ class TestElectiveRoomAlignment(unittest.TestCase):
 
         code_template_key = ("5", sheet_name, "__CODE__", "EC364")
         self.assertIn(code_template_key, shared_elective_room_templates)
+
+    def test_mixed_elective_reserves_lecture_and_lab_slots_with_correct_room_types(self):
+        mixed_courses_file = self.test_data_dir / "align_courses_mixed.csv"
+        pd.DataFrame(
+            [
+                {
+                    "Course_Code": "EL2",
+                    "Course_Title": "Hardware Elective",
+                    "L-T-P-S-C": "2-0-2-0-3",
+                    "Faculty": "Dr. A",
+                    "Semester_Half": "0",
+                    "Elective": "1",
+                    "Students": 50,
+                    "basket": 2,
+                }
+            ]
+        ).to_csv(mixed_courses_file, index=False)
+        self.addCleanup(lambda: mixed_courses_file.unlink(missing_ok=True))
+
+        shared_room_usage = {}
+        shared_elective_slots = {}
+        shared_elective_slot_usage = {}
+        shared_elective_room_templates = {}
+        shared_elective_room_usage = {}
+        shared_elective_representatives = {}
+
+        scheduler = Scheduler(
+            str(self.slots_file),
+            str(mixed_courses_file),
+            str(self.rooms_file),
+            shared_room_usage,
+            shared_elective_slots,
+            dept_name="CSE-1-A",
+            global_elective_slot_usage=shared_elective_slot_usage,
+            global_elective_room_templates=shared_elective_room_templates,
+            global_elective_room_usage=shared_elective_room_usage,
+            global_elective_representatives=shared_elective_representatives,
+        )
+
+        sheet_name = "First_Half"
+        slot = scheduler.slots[0]
+        scheduler.electives_by_sheet[sheet_name] = [(2, scheduler.courses[0])]
+        scheduler.scheduled_entries = [
+            {
+                "sheet": sheet_name,
+                "day": "Tuesday",
+                "slot": slot,
+                "code": "Elective_2",
+                "display": "Elective_2",
+                "faculty": scheduler.courses[0].faculty,
+                "room": "",
+            },
+            {
+                "sheet": sheet_name,
+                "day": "Wednesday",
+                "slot": slot,
+                "code": "Elective_2",
+                "display": "Elective_2 (Lab)",
+                "faculty": scheduler.courses[0].faculty,
+                "room": "",
+            },
+        ]
+
+        scheduler._compute_elective_room_assignments_legally(sheet_name)
+
+        assigned_room = scheduler.elective_room_assignment[sheet_name]["Elective_2||Hardware Elective"]
+        self.assertIn("L:", assigned_room)
+        self.assertIn("P:", assigned_room)
+        self.assertIn("C101", assigned_room)
+        self.assertIn("L101", assigned_room)
+
+        sheet_usage = shared_elective_room_usage[sheet_name]
+        self.assertIn("C101", sheet_usage["Tuesday"][slot])
+        self.assertIn("L101", sheet_usage["Wednesday"][slot])
 
 
 if __name__ == "__main__":
