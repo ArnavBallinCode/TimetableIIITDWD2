@@ -52,6 +52,7 @@ class Scheduler:
         global_combined_room_usage=None,
         global_combined_strength=None,
         global_c004_reserved_slots=None,
+        global_lecturer_busy=None,
     ):
         df = pd.read_csv(slots_file)
         self.slots = [f"{row['Start_Time'].strip()}-{row['End_Time'].strip()}" for _, row in df.iterrows()]
@@ -119,6 +120,7 @@ class Scheduler:
         self.global_c004_reserved_slots = (
             global_c004_reserved_slots if global_c004_reserved_slots is not None else {}
         )
+        self.global_lecturer_busy = global_lecturer_busy if global_lecturer_busy is not None else {}
         self.dept_prefix = self.dept_name.split("-")[0].strip().upper() if self.dept_name else ""
         self.combined_cluster_id = self._resolve_combined_cluster()
         # Soft constraint: prefer avoiding cross-sem elective overlap, but relax if needed.
@@ -636,7 +638,17 @@ class Scheduler:
 
     def generate_timetable(self, courses_to_allocate, writer, sheet_name):
         timetable = pd.DataFrame("", index=self.days, columns=self.slots)
-        lecturer_busy = {day: {slot: [] for slot in self.slots} for day in self.days}
+        lecturer_busy = self.global_lecturer_busy.setdefault(
+            sheet_name,
+            {day: {slot: [] for slot in self.slots} for day in self.days},
+        )
+        for day in self.days:
+            day_busy = lecturer_busy.setdefault(day, {})
+            if not isinstance(day_busy, dict):
+                day_busy = {}
+                lecturer_busy[day] = day_busy
+            for slot in self.slots:
+                day_busy.setdefault(slot, [])
         labs_scheduled = {day: False for day in self.days}
         self.course_room_map = {}
 
@@ -1753,6 +1765,7 @@ if __name__ == "__main__":
     global_combined_room_usage = {}
     global_combined_strength = _build_global_combined_strength(departments)
     global_c004_reserved_slots = {}
+    global_lecturer_busy = {}
     all_scheduled_entries = []
 
     for dept_name, course_file in departments.items():
@@ -1772,6 +1785,7 @@ if __name__ == "__main__":
             global_combined_room_usage=global_combined_room_usage,
             global_combined_strength=global_combined_strength,
             global_c004_reserved_slots=global_c004_reserved_slots,
+            global_lecturer_busy=global_lecturer_busy,
         )
         student_file = f"{dept_name}_timetable.xlsx"
         scheduler.run_all_outputs(dept_name_prefix=dept_name, student_filename=student_file, faculty_filename=combined_faculty_filename)
@@ -1798,6 +1812,7 @@ if __name__ == "__main__":
         global_combined_room_usage=global_combined_room_usage,
         global_combined_strength=global_combined_strength,
         global_c004_reserved_slots=global_c004_reserved_slots,
+        global_lecturer_busy=global_lecturer_busy,
     )
     helper.courses = combined_courses
     helper.scheduled_entries = all_scheduled_entries 
