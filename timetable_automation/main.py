@@ -231,9 +231,7 @@ class Scheduler:
 
     def _bootstrap_c004_reserved_slots_from_templates(self):
         sem_slots = self.global_c004_reserved_slots.setdefault(self.semester_group, set())
-        for key, entries in self.global_combined_slots.items():
-            if not isinstance(key, tuple) or not key:
-                continue
+        for entries in self.global_combined_slots.values():
             for ent in entries:
                 room = str(ent.get("room", "")).strip().upper()
                 if room != "C004":
