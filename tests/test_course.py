@@ -17,7 +17,7 @@ class TestCourse(unittest.TestCase):
         self.assertEqual((course.L, course.T, course.P), (3, 1, 0))
         self.assertFalse(course.is_elective)
 
-    def test_invalid_format_defaults(self):
+    def test_invalid_format_raises(self):
         row = {"Course_Code": "CS102", "L-T-P-S-C": "bad-data"}
-        course = Course(row)
-        self.assertEqual((course.L, course.T, course.P), (0, 0, 0))
+        with self.assertRaises(ValueError):
+            Course(row)
