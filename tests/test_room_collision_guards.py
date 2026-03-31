@@ -60,14 +60,14 @@ class TestRoomCollisionGuards(unittest.TestCase):
         ).to_csv(self.elective_courses_file, index=False)
 
     def tearDown(self):
-        for f in (
+        for file_path in (
             self.slots_file,
             self.rooms_file,
             self.core_courses_file,
             self.elective_courses_file,
         ):
             try:
-                Path(f).unlink()
+                Path(file_path).unlink()
             except FileNotFoundError:
                 pass
 
