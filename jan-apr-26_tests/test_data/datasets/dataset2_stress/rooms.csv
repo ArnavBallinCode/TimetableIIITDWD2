@@ -1,0 +1,4 @@
+Room_ID,Capacity,Type,Facilities
+C101,96,Classroom,"Whiteboard, Display Screen"
+C102,96,Classroom,"Whiteboard, Display Screen"
+L106,48,Lab,"Computers, Whiteboard"
