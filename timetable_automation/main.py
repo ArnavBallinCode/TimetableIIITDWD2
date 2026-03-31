@@ -472,10 +472,22 @@ class Scheduler:
                         if dur_accum >= duration_hours:
                             # Found a valid sub-block
                             waste = dur_accum - duration_hours
+                            blocked_elective_slots = 0
+                            min_room_headroom = len(self.all_rooms)
+                            if not is_elective:
+                                blocked_elective_slots = sum(
+                                    1 for s in current_slots if self._is_blocked_elective_slot(day, s)
+                                )
+                                min_room_headroom = min(
+                                    len(self.all_rooms) - len(room_usage.get(day, {}).get(s, []))
+                                    for s in current_slots
+                                ) if current_slots else len(self.all_rooms)
                             candidates.append({
                                 'slots': current_slots,
                                 'waste': waste,
-                                'start_idx': i # mainly for stability if needed
+                                'start_idx': i, # mainly for stability if needed
+                                'blocked_elective_slots': blocked_elective_slots,
+                                'min_room_headroom': min_room_headroom,
                             })
                             # Once we reach required duration, we can stop extending strictly for "minimum fit"
                             # But if the next slot creates a "better" fit (unlikely if duration increases), we'd continue.
@@ -483,8 +495,20 @@ class Scheduler:
                             # So we stop this inner extension loop.
                             break 
             
-            # Sort candidates by waste (ascending) to prefer tight fits
-            candidates.sort(key=lambda x: x['waste'])
+            # Sort candidates by best fit and slot pressure.
+            # For non-elective sessions, prefer slots that are not globally locked by
+            # electives of other semester groups so flexible cores do not consume room
+            # capacity that those electives rely on.
+            if is_elective:
+                candidates.sort(key=lambda x: x['waste'])
+            else:
+                candidates.sort(
+                    key=lambda x: (
+                        x.get('blocked_elective_slots', 0),
+                        x['waste'],
+                        -x.get('min_room_headroom', 0),
+                    )
+                )
 
             for cand in candidates:
                 current_slots = cand['slots']
