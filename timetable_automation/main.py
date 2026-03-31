@@ -36,6 +36,8 @@ class Course:
 
 
 class Scheduler:
+    DURATION_EPSILON = 1e-6
+
     def __init__(
         self,
         slots_file,
@@ -468,20 +470,20 @@ class Scheduler:
                         s = block[j]
                         current_slots.append(s)
                         dur_accum += self.slot_durations[s]
-                        
-                        if dur_accum >= duration_hours:
-                            # Found a valid sub-block
+
+                        if abs(dur_accum - duration_hours) < self.DURATION_EPSILON:
+                            # Found an exact-fit sub-block
                             waste = dur_accum - duration_hours
                             candidates.append({
                                 'slots': current_slots,
                                 'waste': waste,
                                 'start_idx': i # mainly for stability if needed
                             })
-                            # Once we reach required duration, we can stop extending strictly for "minimum fit"
-                            # But if the next slot creates a "better" fit (unlikely if duration increases), we'd continue.
-                            # Since slot durations are positive, adding more slots only increases waste. 
+                            # Since slot durations are positive, adding more slots only increases duration.
                             # So we stop this inner extension loop.
-                            break 
+                            break
+                        if dur_accum > duration_hours:
+                            break
             
             # Sort candidates by waste (ascending) to prefer tight fits
             candidates.sort(key=lambda x: x['waste'])
@@ -805,7 +807,8 @@ class Scheduler:
                             min_capacity_needed=required_capacity_lt_t,
                         )
                     if allocated_slots:
-                        remaining -= alloc_dur
+                        allocated_duration = sum(self.slot_durations[s] for s in allocated_slots)
+                        remaining = max(0, remaining - allocated_duration)
                         if is_elective and elective_key_L and not has_template_L:
                             self.global_elective_slots.setdefault(elective_key_L, []).append({
                                 'day': day,
@@ -880,7 +883,8 @@ class Scheduler:
                             min_capacity_needed=required_capacity_lt_t,
                         )
                     if res:
-                        remaining -= 1
+                        allocated_duration = sum(self.slot_durations[s] for s in res)
+                        remaining = max(0, remaining - allocated_duration)
                         if is_combined:
                             room = self.scheduled_entries[-1].get("room", "") if self.scheduled_entries else ""
                             self._record_combined_slots(combined_key_T, day, res, room)
@@ -927,7 +931,8 @@ class Scheduler:
                             min_capacity_needed=required_capacity_lt_t,
                         )
                     if allocated_slots:
-                        remaining -= 1
+                        allocated_duration = sum(self.slot_durations[s] for s in allocated_slots)
+                        remaining = max(0, remaining - allocated_duration)
                         if is_elective and elective_key_T and not has_template_T:
                             self.global_elective_slots.setdefault(elective_key_T, []).append({
                                 'day': day,
@@ -1052,7 +1057,8 @@ class Scheduler:
                             min_capacity_needed=None,
                         )
                     if allocated_slots:
-                        remaining -= alloc_dur
+                        allocated_duration = sum(self.slot_durations[s] for s in allocated_slots)
+                        remaining = max(0, remaining - allocated_duration)
                         if is_elective and elective_key_P and not has_template_P:
                             self.global_elective_slots.setdefault(elective_key_P, []).append({
                                 'day': day,
