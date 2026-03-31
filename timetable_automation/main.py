@@ -75,7 +75,7 @@ class Scheduler:
             raise ValueError(
                 f"Invalid timeslot duration: {bad['Start_Time']}-{bad['End_Time']}."
             )
-        df = df.sort_values(by=["__start_minutes__", "__end_minutes__"]).reset_index(drop=True)
+        df = df.sort_values(by=["__start_minutes__"]).reset_index(drop=True)
         for idx in range(1, len(df)):
             prev_end = int(df.at[idx - 1, "__end_minutes__"])
             curr_start = int(df.at[idx, "__start_minutes__"])
@@ -124,6 +124,8 @@ class Scheduler:
         self.scheduled_entries = []
         self.electives_by_sheet = {}
         self.elective_room_assignment = {}
+        # A "break" marker consumes full timetable slots; keep disabled to avoid wasting
+        # instructional slots when slot granularity is already coarse.
         self.break_length_slots = 0
         self.global_elective_slots = global_elective_slots if global_elective_slots is not None else {}
         self.dept_name = str(dept_name).strip()
@@ -226,6 +228,8 @@ class Scheduler:
         return self.dept_prefix if self.dept_prefix else self.dept_name.upper()
 
     def _combined_template_key(self, code, session_type, sheet_name):
+        # Combined templates are keyed globally by course code so the same combined
+        # course stays synchronized across departments/semesters in the same sheet.
         return (sheet_name, str(code).strip().upper(), session_type)
 
     def _record_combined_slots(self, template_key, day, slots, room):
@@ -259,6 +263,7 @@ class Scheduler:
         return self.room_capacity.get(str(room_id).strip().upper(), 0) >= min_capacity_needed
 
     def _combined_strength_key(self, code):
+        # Aggregate strength globally by course code for combined-course capacity checks.
         return str(code).strip().upper()
 
     def _required_capacity_for_course(self, course, is_elective, is_combined):
@@ -450,6 +455,7 @@ class Scheduler:
         return (h2 + m2 / 60) - (h1 + m1 / 60)
 
     def _faculty_busy_in_slots(self, lecturer_busy, day, slots, faculty):
+        # Support both slot-wise map and day-list forms used by existing tests/callers.
         if not faculty:
             return False
         day_busy = lecturer_busy.get(day, {})
