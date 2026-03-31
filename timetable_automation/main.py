@@ -119,8 +119,6 @@ class Scheduler:
         self.global_c004_reserved_slots = (
             global_c004_reserved_slots if global_c004_reserved_slots is not None else {}
         )
-        self.dept_prefix = self.dept_name.split("-")[0].strip().upper() if self.dept_name else ""
-        self.combined_cluster_id = self._resolve_combined_cluster()
         # Soft constraint: prefer avoiding cross-sem elective overlap, but relax if needed.
         self.relax_cross_sem_elective_block = True
         self._bootstrap_c004_reserved_slots_from_templates()
@@ -184,18 +182,8 @@ class Scheduler:
             return half in {"2", "0"}
         return True
 
-    def _resolve_combined_cluster(self):
-        cluster_groups = (
-            {"CSE"},
-            {"DSAI", "ECE"},
-        )
-        for group in cluster_groups:
-            if self.dept_prefix in group:
-                return "+".join(sorted(group))
-        return self.dept_prefix if self.dept_prefix else self.dept_name.upper()
-
     def _combined_template_key(self, code, session_type, sheet_name):
-        return (self.semester_group, self.combined_cluster_id, sheet_name, code, session_type)
+        return (sheet_name, str(code).strip().upper(), session_type)
 
     def _record_combined_slots(self, template_key, day, slots, room):
         entries = self.global_combined_slots.setdefault(template_key, [])
@@ -228,7 +216,7 @@ class Scheduler:
         return self.room_capacity.get(str(room_id).strip().upper(), 0) >= min_capacity_needed
 
     def _combined_strength_key(self, code):
-        return (self.semester_group, self.combined_cluster_id, str(code).strip().upper())
+        return str(code).strip().upper()
 
     def _required_capacity_for_course(self, course, is_elective, is_combined):
         if is_elective or not is_combined:
@@ -245,8 +233,6 @@ class Scheduler:
         sem_slots = self.global_c004_reserved_slots.setdefault(self.semester_group, set())
         for key, entries in self.global_combined_slots.items():
             if not isinstance(key, tuple) or not key:
-                continue
-            if str(key[0]) != str(self.semester_group):
                 continue
             for ent in entries:
                 room = str(ent.get("room", "")).strip().upper()
@@ -1665,19 +1651,6 @@ class Scheduler:
         self._generate_faculty_workbook(faculty_filename)
 
 
-def _resolve_combined_cluster_from_dept(dept_name):
-    dept_name = str(dept_name).strip()
-    dept_prefix = dept_name.split("-")[0].strip().upper() if dept_name else ""
-    cluster_groups = (
-        {"CSE"},
-        {"DSAI", "ECE"},
-    )
-    for group in cluster_groups:
-        if dept_prefix in group:
-            return "+".join(sorted(group))
-    return dept_prefix if dept_prefix else dept_name.upper()
-
-
 def _safe_students_count(value):
     try:
         return max(0, int(float(str(value).strip())))
@@ -1704,9 +1677,6 @@ def _is_elective_row(row):
 def _build_global_combined_strength(departments):
     totals = {}
     for dept_name, course_file in departments.items():
-        match = re.search(r"\d+", str(dept_name))
-        semester_group = match.group(0) if match else "UNKNOWN"
-        cluster_id = _resolve_combined_cluster_from_dept(dept_name)
         df = pd.read_csv(course_file)
         for _, row in df.iterrows():
             if not _is_truthy_flag(row.get("is_combined", row.get("Is_Combined", 0))):
@@ -1717,7 +1687,7 @@ def _build_global_combined_strength(departments):
             if not code:
                 continue
             students = _safe_students_count(row.get("Students", 0))
-            key = (semester_group, cluster_id, code)
+            key = code
             totals[key] = totals.get(key, 0) + students
     return totals
 
