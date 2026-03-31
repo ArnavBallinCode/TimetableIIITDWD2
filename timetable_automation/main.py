@@ -36,6 +36,8 @@ class Course:
 
 
 class Scheduler:
+    DURATION_EPSILON = 1e-6
+
     def __init__(
         self,
         slots_file,
@@ -469,9 +471,9 @@ class Scheduler:
                         current_slots.append(s)
                         dur_accum += self.slot_durations[s]
 
-                        if abs(dur_accum - duration_hours) < 1e-9:
+                        if abs(dur_accum - duration_hours) < self.DURATION_EPSILON:
                             # Found an exact-fit sub-block
-                            waste = 0
+                            waste = dur_accum - duration_hours
                             candidates.append({
                                 'slots': current_slots,
                                 'waste': waste,
