@@ -201,7 +201,7 @@ class TC04_InvalidLTPFormat(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Invalid L-T-P-S-C format: expected 5 integers"):
             Course(row)
 
-    def test_scheduler_rejects_bad_ltp_during_load(self):
+    def test_scheduler_rejects_bad_ltpsc_during_load(self):
         """Scheduler construction fails fast with malformed L-T-P-S-C input."""
         with self.assertRaisesRegex(ValueError, "Invalid L-T-P-S-C format: expected 5 integers"):
             make_scheduler(
