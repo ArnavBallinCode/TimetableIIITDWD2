@@ -57,6 +57,7 @@ class TestSlotPressureAvoidance(unittest.TestCase):
             str(self.rooms_file),
             global_room_usage={},
             dept_name="DSAI-3",
+            # Semester-group "1" simulates electives already locking this slot.
             global_elective_slot_usage={"1": {("Monday", "09:00-10:00")}},
         )
 
@@ -75,6 +76,22 @@ class TestSlotPressureAvoidance(unittest.TestCase):
         )
 
         self.assertEqual(result, ["10:00-11:00"])
+
+    def test_blocked_elective_slot_detection_for_other_semesters(self):
+        scheduler = Scheduler(
+            str(self.slots_file),
+            str(self.courses_file),
+            str(self.rooms_file),
+            global_room_usage={},
+            dept_name="DSAI-3",
+            global_elective_slot_usage={
+                "1": {("Monday", "09:00-10:00")},
+                "3": {("Tuesday", "10:00-11:00")},
+            },
+        )
+
+        self.assertTrue(scheduler._is_blocked_elective_slot("Monday", "09:00-10:00"))
+        self.assertFalse(scheduler._is_blocked_elective_slot("Tuesday", "10:00-11:00"))
 
 
 if __name__ == "__main__":

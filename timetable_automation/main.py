@@ -481,7 +481,7 @@ class Scheduler:
                                 min_room_headroom = min(
                                     len(self.all_rooms) - len(room_usage.get(day, {}).get(s, []))
                                     for s in current_slots
-                                )
+                                ) if current_slots else len(self.all_rooms)
                             candidates.append({
                                 'slots': current_slots,
                                 'waste': waste,
